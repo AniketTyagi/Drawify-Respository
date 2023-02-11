@@ -9,8 +9,8 @@ function whiteboard(boundary) {
   this.brush_size = 4;
   // Boolean to see whether we are drawing or erasing
   this.paint_toggle = true;
-  // pixel array to store the values of the whiteboard pixels
-  this.board_pixels = [];
+  // array to hold strokes
+  this.board_strokes = [];
   
   // Main whiteboard logic loop
   this.main_loop = function() {
@@ -25,6 +25,14 @@ function whiteboard(boundary) {
         this.paint([255, 255, 255], 40);
       }
     }
+    // Render white board strokes
+    for(var i = 0; i < this.board_strokes.length; i++) {
+      // Get stroke characteristics
+      strokeWeight(this.board_strokes[i][0]);
+      stroke(this.board_strokes[i][1][0], this.board_strokes[i][1][1], this.board_strokes[i][1][2]);
+      // Render the actual stroke
+      line(this.board_strokes[i][2][0], this.board_strokes[i][2][1], this.board_strokes[i][2][2], this.board_strokes[i][2][3]);
+    }
     // Render white board border
     strokeWeight(4);
     stroke(0);
@@ -34,65 +42,50 @@ function whiteboard(boundary) {
   
   // Whiteboard drawing function
   this.paint = function(brush_color, brush_size) {
-    // Calculate outer and inner x and y boundary values
-    var innerX = this.boundary[0];
-    var innerY = this.boundary[1];
-    var outerX = this.boundary[0] + this.boundary[2];
-    var outerY = this.boundary[1] + this.boundary[3];
-    // Calculate boolean boundaries
-    var within_x = mouseX > innerX && (mouseX < outerX);
-    var within_y = mouseY > innerY && (mouseY < outerY);
-    // Check whether the mouse is within the boundary of the whiteboard
-    if(within_x && within_y) {
-      // Draw a line between the current and previous frame's mouse coordinates
-      stroke(brush_color[0], brush_color[1], brush_color[2]);
-      strokeWeight(brush_size);
-      // Bound the mouse values within the whiteboard before processing the stroke
-      var bound_mouseX = Math.max(innerX, Math.min(outerX, mouseX));
-      var bound_mouseY = Math.max(innerY, Math.min(outerY, mouseY));
-      var bound_pmouseX = Math.max(innerX, Math.min(outerX, pmouseX));
-      var bound_pmouseY = Math.max(innerY, Math.min(outerY, pmouseY));
-      // Draw the paint stroke
-      line(bound_mouseX, bound_mouseY, bound_pmouseX, bound_pmouseY);
-    }
-  }
-  
-  // Save a snapshot of the current pixels in the whiteboard in a reduced pixel_array
-  // Repeated calls to this function will crash the browser as per-frame you are loading all canvas pixels
-  this.save = function() {
-    // Calculate outer and inner x and y boundary values
-    var innerX = this.boundary[0];
-    var innerY = this.boundary[1];
-    var outerX = this.boundary[0] + this.boundary[2];
-    var outerY = this.boundary[1] + this.boundary[3];
-    // Load pixels from canvas and then save
-    loadPixels();
-    // Iterate through screen pixels and store into an array
-    for(var i = 0; i < (outerY - innerY); i++) {
-      for(var j = 0; j < (outerX - innerX); j++) {
-        // Get index for pixel array
-        var index = (j + i * width) * 4;
-        // Translate canvas reference frame to whiteboard reference frame
-        var canvas_index = ((j + innerX) + (i + innerY) * width) * 4;
-        this.board_pixels[index + 0] = pixels[canvas_index + 0];
-        this.board_pixels[index + 1] = pixels[canvas_index + 1];
-        this.board_pixels[index + 2] = pixels[canvas_index + 2];
-        this.board_pixels[index + 3] = pixels[canvas_index + 3];
+    // Only paint if there is a stroke to paint
+    if(mouseX != pmouseX || mouseY != pmouseY) {
+      // Calculate outer and inner x and y boundary values
+      var outerX = this.boundary[0] + this.boundary[2];
+      var outerY = this.boundary[1] + this.boundary[3];
+      // Calculate boolean boundaries
+      var within_x = mouseX > this.boundary[0] && (mouseX < outerX);
+      var within_y = mouseY > this.boundary[1] && (mouseY < outerY);
+      // Check whether the mouse is within the boundary of the whiteboard
+      if(within_x && within_y) {
+        // Draw a line between the current and previous frame's mouse coordinates
+        stroke(brush_color[0], brush_color[1], brush_color[2]);
+        strokeWeight(brush_size);
+        // Bound the mouse values within the whiteboard before processing the stroke
+        var bound_mouseX = Math.max(this.boundary[0], Math.min(outerX, mouseX));
+        var bound_mouseY = Math.max(this.boundary[1], Math.min(outerY, mouseY));
+        var bound_pmouseX = Math.max(this.boundary[0], Math.min(outerX, pmouseX));
+        var bound_pmouseY = Math.max(this.boundary[1], Math.min(outerY, pmouseY));
+        // Push stroke into stroke array [brush_size, brush_color, stroke_points]
+        this.board_strokes.push([brush_size, 
+                                [brush_color[0], brush_color[1], brush_color[2]], 
+                                [bound_mouseX, bound_mouseY, bound_pmouseX, bound_pmouseY]
+                                ]);
       }
     }
   }
   
   // Return a JSON representation of the whiteboard
   this.export = function() {
-    // Create a shallow copy of board_pixels
-    var board_pixels_copy = [];
-    for(var i = 0; i < this.board_pixels.length; i++) {
-      board_pixels_copy[i] = this.board_pixels[i];
+    // Create a loop copy of the array
+    var board_strokes_copy = [];
+    for(var i = 0; i < this.board_strokes.length; i++) {
+      // Get and push new board stroke coordinates
+      board_strokes_copy.push([this.board_strokes[i][0], 
+                              [this.board_strokes[i][1][0], this.board_strokes[i][1][1], this.board_strokes[i][1][2]], 
+                              [this.board_strokes[i][2][0], this.board_strokes[i][2][1], this.board_strokes[i][2][2], this.board_strokes[i][2][3]]
+                              ])
     }
+    // Create a copy of the boundary array
+    var boundary_copy = [this.boundary[0], this.boundary[1], this.boundary[2], this.boundary[3]];
     // Construct the JSON object
     var whiteboard_JSON = {
-      boundary: this.boundary, 
-      board_pixels: board_pixels_copy
+      boundary: boundary_copy, 
+      board_strokes: board_strokes_copy
     };
     // Return the JSON object
     return whiteboard_JSON
@@ -100,35 +93,23 @@ function whiteboard(boundary) {
   
   // Load an image from an imported whiteboard JSON file
   this.import = function(whiteboard_JSON) {
-    // Get white board JSON values into current whiteboard module
-    // this.boundary = whiteboard_JSON.boundary;
-    // Update the canvas pixels
-    loadPixels();
+    // Clear board strokes
+    this.board_strokes.length = 0;
     // Calculate outer and inner x and y boundary values
     var innerX = this.boundary[0];
     var innerY = this.boundary[1];
     var outerX = this.boundary[0] + this.boundary[2];
     var outerY = this.boundary[1] + this.boundary[3];
-    // Iterate through canvas
-    for(var i = 0; i < (outerY - innerY); i++) {
-      for(var j = 0; j < (outerX - innerX); j++) {
-        // Get index for pixel array
-        var index = (j + i * width) * 4;
-        // Translate canvas reference frame to whiteboard reference frame
-        var canvas_index = ((j + innerX) + (i + innerY) * width) * 4;
-        pixels[canvas_index + 0] = whiteboard_JSON.board_pixels[index + 0];
-        pixels[canvas_index + 1] = whiteboard_JSON.board_pixels[index + 1];
-        pixels[canvas_index + 2] = whiteboard_JSON.board_pixels[index + 2];
-        pixels[canvas_index + 3] = whiteboard_JSON.board_pixels[index + 3];
-        // Shallow copy the JSON object
-        this.board_pixels[index + 0] = whiteboard_JSON.board_pixels[index + 0];
-        this.board_pixels[index + 1] = whiteboard_JSON.board_pixels[index + 1];
-        this.board_pixels[index + 2] = whiteboard_JSON.board_pixels[index + 2];
-        this.board_pixels[index + 3] = whiteboard_JSON.board_pixels[index + 3];
-        // Shallow copy the JSON object
-      }
+    // Get coordinate translations
+    var x_change = this.boundary[0] - whiteboard_JSON.boundary[0];
+    var y_change = this.boundary[1] - whiteboard_JSON.boundary[1];
+    // Iterate through boardstrokes
+    for(var i = 0; i < whiteboard_JSON.board_strokes.length; i++) {
+      // Get and push new board stroke coordinates
+      this.board_strokes.push([whiteboard_JSON.board_strokes[i][0], 
+                              [whiteboard_JSON.board_strokes[i][1][0], whiteboard_JSON.board_strokes[i][1][1], whiteboard_JSON.board_strokes[i][1][2]], 
+                              [whiteboard_JSON.board_strokes[i][2][0] + x_change, whiteboard_JSON.board_strokes[i][2][1] + y_change, whiteboard_JSON.board_strokes[i][2][2] + x_change, whiteboard_JSON.board_strokes[i][2][3] + y_change]
+                              ])
     }
-    // Update pixel array
-    updatePixels();
   }
 }
