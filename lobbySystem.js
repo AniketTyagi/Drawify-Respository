@@ -21,6 +21,10 @@ async function createLobby() {
     return lobbyCode;
 }
 
+//Adds "playerName" to a lobby's list of players using the lobby code
+//code: lobby code/name
+//playerName: name to be added to players list
+
 async function joinLobby(code, playerName) {
     //retrieve the lobby's current list of players
     const lobbyData = await getData('/game_lobbies/' + code);
@@ -31,6 +35,7 @@ async function joinLobby(code, playerName) {
     await putData('/game_lobbies/' + code + "/players", players);
 }
 
+//randomly generates 4 letter code for lobby name/join code
 function generateCode() {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let lobbyCode = "";
