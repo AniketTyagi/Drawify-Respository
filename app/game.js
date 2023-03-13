@@ -1,4 +1,4 @@
-/* global tokenHoverAudio, whiteboard, tokenBuildAudio, tokenConquerAudio, tokenScoreAudio, Howl, loadSound, triangle, color, beginShape, endShape, vertex, GameBoard, PoissonDisc, text, line, noFill, p5,Delaunator,  random, createVector, firebase, textAlign, keyCode, CENTER, mousePressed, mouseReleased, createCanvas, createSlider, textSize, background, displayWidth, displayHeight, createButton, width, height, windowWidth, windowHeight, ellipse, mouseX, mouseY, fill, clear, rect, noStroke, createInput, stroke, strokeWeight */
+/* global tokenHoverAudio, whiteboard, createElement, createDiv, tokenBuildAudio, tokenConquerAudio, tokenScoreAudio, Howl, loadSound, triangle, color, beginShape, endShape, vertex, GameBoard, PoissonDisc, text, line, noFill, p5,Delaunator,  random, createVector, firebase, textAlign, keyCode, CENTER, mousePressed, mouseReleased, createCanvas, createSlider, textSize, background, displayWidth, displayHeight, createButton, width, height, windowWidth, windowHeight, ellipse, mouseX, mouseY, fill, clear, rect, noStroke, createInput, stroke, strokeWeight */
 
 function Game(db) {
   // Initialize database variable
@@ -13,7 +13,8 @@ function Game(db) {
   this.dbRootRef = firebase.database().ref('gameLobbies/' + this.currentGameRoom);
   
   // Initialize and create the whiteboard object
-  this.player_board = new whiteboard([0, displayHeight / 10, 2/3 * displayWidth, displayHeight - (4 * displayHeight / 10)]);
+  var whiteboard_edge_x = displayWidth / 6
+  this.player_board = new whiteboard([whiteboard_edge_x, displayHeight / 10, 6/8 * displayWidth - whiteboard_edge_x, displayHeight - (4 * displayHeight / 10)]);
   
   // Keep track of current player prompt
   this.current_prompt = "";
@@ -21,9 +22,19 @@ function Game(db) {
   // Keep track of the recieved prompt
   this.received_prompt = ""
   
-    // JSON object that describes players during the game
+  // Keep track of all player data
+  this.player_data = [];
+  
+  // HTML Elements for status rendering
+  this.player_status_elements = [];
+  
+  // Keep track of lobby joining
+  this.current_occupied = []
+  
+  // JSON object that describes players during the game
   this.player_profile = function() {
     this.data = {
+      username: "", 
       current_prompt_ready: false, 
       current_prompt: "", 
       current_board_ready: false, 
@@ -40,6 +51,7 @@ function Game(db) {
     
     // Render the upper text prompt
     textSize(60);
+    fill(255)
     strokeWeight(1)
     if(this.current_phase == "no_game") {
       text('Please join or start a game :D', 10, 60);
@@ -51,7 +63,8 @@ function Game(db) {
       text(('Prompt to Draw For: ' + this.received_prompt), 10, 60)
     }
     
-    
+    // Render player status div
+    // Create div for player status
   }
   
   // Update a player's prompt on the server
@@ -88,7 +101,29 @@ function Game(db) {
       const data = snapshot.val();
       this.current_phase = data.current_phase;
       this.current_occupied = data.occupied;
-            
+      this.player_data = data.players;
+      console.log(this.player_data)
+      
+      // Update player ready status depending on the game type
+      for(var i = 0; i < this.player_data.length; i++) {
+        var status_emoji = '🟢'
+        if(data.current_phase == "lobby_waiting") {
+          if(!this.current_occupied[i]) {
+            status_emoji ='🔴'
+          }
+        } else if(data.current_phase == "drawing") {
+          if(!this.player_data[i].current_board_ready) {
+            status_emoji ='🔴'
+          }
+        } else if(data.current_phase == "initial_prompt") {
+          if(!this.player_data[i].current_prompt_ready) {
+            status_emoji ='🔴'
+          }
+        }
+        
+        this.player_status_elements[i].html('player' + i + ' ready: ' + status_emoji)
+      }
+      
       // Check whether the game has started
       if(data.current_phase == "lobby_waiting") {
         // Check if all players have entered the lobby
@@ -233,6 +268,27 @@ function Game(db) {
       const data = snapshot.val();
       this.current_phase = data.current_phase;
       this.current_occupied = data.occupied;
+      this.player_data = data.players;
+      
+      // Update player ready status depending on the game type
+      for(var i = 0; i < this.current_occupied.length; i++) {
+        var status_emoji = '🟢'
+        if(data.current_phase == "lobby_waiting") {
+          if(!this.current_occupied[i]) {
+            status_emoji ='🔴'
+          }
+        } else if(data.current_phase == "drawing") {
+          if(!this.player_data[i].current_board_ready) {
+            status_emoji ='🔴'
+          }
+        } else if(data.current_phase == "initial_prompt") {
+          if(!this.player_data[i].current_prompt_ready) {
+            status_emoji ='🔴'
+          }
+        }
+        
+        this.player_status_elements[i].html('player' + i + ' ready: ' + status_emoji)
+      }
       
       if(this.current_phase == "initial_prompt") {
         // Get the latest swapped board from server
@@ -294,6 +350,17 @@ function Game(db) {
           this.database
             .ref("gameLobbies/" + game_room_ID + "/occupied")
             .set(this.current_occupied);
+          
+          // Create HTML game status elements
+          // Display player statuses by iterating through player data
+          for(var i = 0; i < this.player_data.length; i++) {
+            // Get status emoji
+            var status_emoji = '🔴';
+    
+            this.player_status_elements.push(createElement('li', 'player' + i + ': ' + status_emoji));
+            //player_li.elt.textContent = "overwrite"
+            this.player_status_elements[i].parent('player_list')
+          }
         }
       })
     .catch(error => {
@@ -305,43 +372,58 @@ function Game(db) {
   // Only the host-listener, manager, and calls would occur in here
   this.createRoom = function(game_room_ID, player_numbers, rounds) {
     this.current_game_room = game_room_ID;
-          // Initialize database reference and game_room_ID
-          this.dbRootRef = firebase.database().ref('gameLobbies/' + game_room_ID);
-          this.current_game_room = game_room_ID;
-          
-          // Attach and create host listener here
-          this.host_listener();
     
-          // Make whiteboard here
+    // Initialize database reference and game_room_ID
+    this.dbRootRef = firebase.database().ref('gameLobbies/' + game_room_ID);
+    this.current_game_room = game_room_ID;
+          
+    // Attach and create host listener here
+    this.host_listener();
 
-          // Initialize game variables
-          this.player_ID = 0;
-          this.current_phase = "lobby_waiting";
+    // Initialize game variables
+    this.player_ID = 0;
+    this.current_phase = "lobby_waiting";
     
-          // Contains how many players will be in the game and whether they've joined
-          this.current_occupied = [true]
-          for(var i = 0; i < player_numbers - 1; i++) {
-            this.current_occupied.push(false)
-          }
+    // Contains how many players will be in the game and whether they've joined
+    this.current_occupied = [true]
+    for(var i = 0; i < player_numbers - 1; i++) {
+      this.current_occupied.push(false)
+    }
     
-          // This section contains the JSON format for describing the features of a game room
-          console.log("Room created!")
+    // This section contains the JSON format for describing the features of a game room
+    console.log("Room created!")
           
-          // Create each player game history profile
-          var player_array = []
-          for(var i = 0; i < player_numbers; i++) {
-            var new_player = new this.player_profile()
-            player_array.push(new_player.data);
-          }
+    // Create each player game history profile
+    var player_array = []
+    for(var i = 0; i < player_numbers; i++) {
+      var new_player = new this.player_profile()
+      new_player.data.username = "player" + i;
+      player_array.push(new_player.data);
+    }
     
-          // Push and create database object
-          this.database.ref("gameLobbies/" + game_room_ID).set({
-            current_round: rounds, 
-            current_phase: "lobby_waiting",
-            occupied: this.current_occupied, 
-            players: player_array, 
-            originalWidth: width,
-            originalHeight: height
-          });
+    // Push and create database object
+    this.database.ref("gameLobbies/" + game_room_ID).set({
+      current_round: rounds, 
+      current_phase: "lobby_waiting",
+      occupied: this.current_occupied, 
+      players: player_array, 
+      originalWidth: width,
+      originalHeight: height
+    });
+    
+    // Create HTML game status elements
+    // Display player statuses by iterating through player data
+    for(var i = 0; i < this.player_data.length; i++) {
+      console.log(this.player_data.length)
+      // Get status emoji
+      var status_emoji = '🔴';
+      // Create player status HTML element
+      var player_li = createElement('li', 'player' + i + ': ' + status_emoji)
+      player_li.parent('player_list')
+      this.player_status_elements.push(player_li);
+      //this.player_status_elements[i].html('overwrite test')
+      
+    }
+    console.log("Number of status elements: " + this.player_status_elements.length)
   }
 }
