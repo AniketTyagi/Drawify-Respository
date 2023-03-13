@@ -37,6 +37,12 @@ function whiteboard(boundary) {
   
   // Main whiteboard logic loop
   this.main_loop = function() {
+    // Render white board background
+    strokeWeight(0);
+    stroke(0);
+    fill(255);
+    rect(this.boundary[0], this.boundary[1], this.boundary[2], this.boundary[3]);
+    
     // Set paint as inverse of space click
     this.paint_toggle = !spaceClick;
     // Block to draw on the whiteboard
@@ -62,9 +68,9 @@ function whiteboard(boundary) {
     this.color_palette_render(this.color_palette);
     
     // Render white board border
-    strokeWeight(4);
+    strokeWeight(1);
     stroke(0);
-    noFill();
+    noFill(0);
     rect(this.boundary[0], this.boundary[1], this.boundary[2], this.boundary[3]);
   }
   
