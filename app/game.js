@@ -401,7 +401,9 @@ function Game(db) {
     
     // This section contains the JSON format for describing the features of a game room
     console.log("Room created!")
+
     console.log(`${this.current_game_room}`)
+
           
     // Create each player game history profile
     var player_array = []
@@ -413,6 +415,7 @@ function Game(db) {
     
     // Push and create database object
     this.database.ref("gameLobbies/" + game_room_ID).set({
+
       current_round: player_numbers , 
       current_phase: "lobby_waiting",
       occupied: this.current_occupied, 

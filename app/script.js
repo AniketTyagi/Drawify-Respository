@@ -27,9 +27,11 @@ var page_number = 0;
 var prompt_input;
 var prompt_button;
 
+
 //create and join lobby buttons
 var lobby_join_button;
 var lobby_create_button;
+
 
 // Define page divs
 var div;
@@ -75,6 +77,7 @@ function setup() {
   player_list.style('list-style-type', 'none')
   player_list.parent('player_status')
   player_list.id('player_list')
+
   
   //Join Lobby Button
   lobby_create_button = createButton('Make New Lobby');
@@ -88,6 +91,7 @@ function setup() {
   lobby_join_button.size(1 / 4 * testGame.player_board.boundary[2], testGame.player_board.boundary[1]);
   lobby_join_button.mousePressed(join_game);
   
+
 }
 
 function draw() {
@@ -109,6 +113,7 @@ function submit_input() {
   }
 }
 
+
 function create_game() {
   let numPlayers = prompt("Enter Number of Players");
   
@@ -127,6 +132,7 @@ function join_game(){
   lobby_join_button.remove();
   
 }
+
 
 
 function mousePressed() {
