@@ -27,6 +27,12 @@ var page_number = 0;
 var prompt_input;
 var prompt_button;
 
+
+//create and join lobby buttons
+var lobby_join_button;
+var lobby_create_button;
+
+
 // Define page divs
 var div;
 var player_list;
@@ -71,6 +77,21 @@ function setup() {
   player_list.style('list-style-type', 'none')
   player_list.parent('player_status')
   player_list.id('player_list')
+
+  
+  //Join Lobby Button
+  lobby_create_button = createButton('Make New Lobby');
+  lobby_create_button.position((testGame.player_board.boundary[0] + testGame.player_board.boundary[2])/2, (testGame.player_board.boundary[1] + testGame.player_board.boundary[3])/2 - 100);
+  lobby_create_button.size(1 / 4 * testGame.player_board.boundary[2], testGame.player_board.boundary[1]);
+  lobby_create_button.mousePressed(create_game);
+  
+  //Join Lobby Button
+  lobby_join_button = createButton('Join Existing Lobby');
+  lobby_join_button.position((testGame.player_board.boundary[0] + testGame.player_board.boundary[2])/2, (testGame.player_board.boundary[1] + testGame.player_board.boundary[3])/2 + 100);
+  lobby_join_button.size(1 / 4 * testGame.player_board.boundary[2], testGame.player_board.boundary[1]);
+  lobby_join_button.mousePressed(join_game);
+  
+
 }
 
 function draw() {
@@ -92,7 +113,28 @@ function submit_input() {
   }
 }
 
-//
+
+function create_game() {
+  let numPlayers = prompt("Enter Number of Players");
+  
+  testGame.createRoom(numPlayers) //change these to be proper parameters
+  
+  lobby_create_button.remove();
+  lobby_join_button.remove();
+}
+
+function join_game(){
+  let code = prompt("Enter 4 letter lobby code");
+  testGame.joinRoom(code);
+  
+  //remove buttons (if successful)
+  lobby_create_button.remove();
+  lobby_join_button.remove();
+  
+}
+
+
+
 function mousePressed() {
   mouseClick = true;
 }

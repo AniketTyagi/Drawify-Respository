@@ -54,13 +54,21 @@ function Game(db) {
     fill(255)
     strokeWeight(1)
     if(this.current_phase == "no_game") {
+      
       text('Please join or start a game :D', 10, 60);
+      
     } else if(this.current_phase == "lobby_waiting") {
-      text('Waiting for game to start', 10, 60);
+      
+      text(`Waiting for game to start: Lobby code: ${this.current_game_room}`, 10, 60);
+      
     } else if(this.current_phase == "initial_prompt") {
+      
       text('Please enter a prompt below :)!', 10, 60)
+      
     } else if(this.current_phase == "drawing") {
+      
       text(('Prompt to Draw For: ' + this.received_prompt), 10, 60)
+      
     }
     
     // Render player status div
@@ -370,8 +378,9 @@ function Game(db) {
   
   // Function to create an online game of your own
   // Only the host-listener, manager, and calls would occur in here
-  this.createRoom = function(game_room_ID, player_numbers, rounds) {
-    this.current_game_room = game_room_ID;
+  this.createRoom = function(player_numbers) {
+    //generate the code for the lobby
+    var game_room_ID = this.generateCode();
     
     // Initialize database reference and game_room_ID
     this.dbRootRef = firebase.database().ref('gameLobbies/' + game_room_ID);
@@ -392,6 +401,9 @@ function Game(db) {
     
     // This section contains the JSON format for describing the features of a game room
     console.log("Room created!")
+
+    console.log(`${this.current_game_room}`)
+
           
     // Create each player game history profile
     var player_array = []
@@ -403,7 +415,8 @@ function Game(db) {
     
     // Push and create database object
     this.database.ref("gameLobbies/" + game_room_ID).set({
-      current_round: rounds, 
+
+      current_round: player_numbers , 
       current_phase: "lobby_waiting",
       occupied: this.current_occupied, 
       players: player_array, 
@@ -426,4 +439,16 @@ function Game(db) {
     }
     console.log("Number of status elements: " + this.player_status_elements.length)
   }
+  
+    //randomly generates 4 letter code for lobby name/join code
+  this.generateCode = function() {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let lobbyCode = "";
+    for (let i = 0; i < 4; i++) {
+        lobbyCode += letters[Math.floor(Math.random() * letters.length)];
+    } 
+
+    return lobbyCode;
+  }
+  
 }
