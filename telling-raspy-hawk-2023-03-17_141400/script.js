@@ -231,11 +231,15 @@ function create_game() {
     numPlayers = prompt("Enter Number of Players");
     mouseClick = false
   } while(numPlayers.match(/^[0-9]+$/) == null) 
-  let player_username = prompt("Enter your username");
+  let player_username = "";
+  do {
+    player_username = prompt("Enter your username");
+  } while(player_username == "");
+  
   mouseClick = false
   
   // Set username and join room
-  if(player_username != null && numPlayers != null) {
+  if(player_username != null && numPlayers != null && numPlayers > 1) {
     game.createRoom(numPlayers, player_username) //change these to be proper parameters
   
     //clean up buttons
@@ -254,12 +258,15 @@ function join_game(){
     code = prompt("Enter 4 letter lobby code");
     mouseClick = false
   } while(code.length != 4);
-  let player_username = prompt("Enter your username");
+  let player_username = "";
+  do {
+    player_username = prompt("Enter your username");
+  } while(player_username.length = 0);
   
   
   if(code != null && player_username != null) {
   // Set username and join room
-  let result = game.joinRoom(code, player_username);
+  let result = game.joinRoom(code.toUpperCase(), player_username);
   
   //remove buttons (if successful)
    if(result == 0) {
@@ -478,11 +485,19 @@ function game_page_init() {
   chat_button.style('border-radius', '25px')
   chat_button.style('font-size', '25px')
   
-  //Join Lobby Button
+  // Create Lobby Button
   lobby_create_button = createButton('Make New Lobby');
   lobby_create_button.position((game.player_board.boundary[0] + game.player_board.boundary[2])/2, (game.player_board.boundary[1] + game.player_board.boundary[3])/2 - 100);
   lobby_create_button.size(1 / 4 * game.player_board.boundary[2], game.player_board.boundary[1]);
   lobby_create_button.mousePressed(create_game);
+  lobby_create_button.style('border-radius', '25px');
+  lobby_create_button.style('transition', 'transform 0.2s ease-in-out');
+  lobby_create_button.mouseOver(function(){
+    lobby_create_button.style('transform', 'scale(1.2) rotate(5deg)');
+  });
+  lobby_create_button.mouseOut(function(){
+    lobby_create_button.style('transform', 'scale(1) rotate(0deg)');
+  });
   mouseClick = false
   
   //Join Lobby Button
@@ -490,6 +505,14 @@ function game_page_init() {
   lobby_join_button.position((game.player_board.boundary[0] + game.player_board.boundary[2])/2, (game.player_board.boundary[1] + game.player_board.boundary[3])/2 + 100);
   lobby_join_button.size(1 / 4 * game.player_board.boundary[2], game.player_board.boundary[1]);
   lobby_join_button.mousePressed(join_game);
+  lobby_join_button.style('border-radius', '25px');
+  lobby_join_button.style('transition', 'transform 0.2s ease-in-out');
+  lobby_join_button.mouseOver(function(){
+    lobby_join_button.style('transform', 'scale(1.2) rotate(-5deg)');
+  });
+  lobby_join_button.mouseOut(function(){
+    lobby_join_button.style('transform', 'scale(1) rotate(0deg)');
+  });
   mouseClick = false
 }
 
